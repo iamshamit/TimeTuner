@@ -45,7 +45,7 @@ The project follows a microservices-inspired architecture:
 
 *   **Node.js** (v20+)
 *   **Python** (v3.11+)
-*   **MongoDB** (Local or Atlas)
+*   **MongoDB** (MongoDB Atlas or local instance with TLS enabled)
 *   **Redis** (Local or Cloud)
 
 ### Installation
@@ -86,7 +86,8 @@ The project follows a microservices-inspired architecture:
 Ensure your `backend/.env` includes:
 ```env
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/timetuner
+# Note: The application requires a TLS-enabled MongoDB connection (e.g., MongoDB Atlas)
+MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.example.mongodb.net/timetuner
 JWT_ACCESS_SECRET=your_secret
 SOLVER_URL=http://localhost:8000
 REDIS_URL=redis://localhost:6379
