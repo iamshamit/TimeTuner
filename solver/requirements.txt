@@ -1,0 +1,14 @@
+# Python Solver Requirements
+# To be generated after creating virtual environment with Python 3.11/3.12
+
+# Core
+fastapi>=0.104.0
+uvicorn>=0.24.0
+ortools>=9.8
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
+
+# Testing
+pytest>=7.4.0
+httpx>=0.25.0
