@@ -33,6 +33,16 @@ const timetableSchema = new mongoose.Schema({
         enum: ['draft', 'review', 'approved', 'published', 'archived'],
         default: 'draft'
     },
+    // Time slot configuration for this timetable
+    timeSlots: {
+        slots: [{
+            slotNumber: { type: Number },
+            startTime: { type: String },
+            endTime: { type: String },
+            isBreak: { type: Boolean, default: false },
+            shift: { type: String, enum: ['morning', 'afternoon'] }
+        }]
+    },
     events: [{
         day: {
             type: String,

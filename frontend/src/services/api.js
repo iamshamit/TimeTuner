@@ -132,9 +132,9 @@ export const timetablesAPI = {
 };
 
 export const timeSlotsAPI = {
-    getAll: (params) => api.get('/time-slots', { params }),
-    getOne: (id) => api.get(`/time-slots/${id}`),
-    create: (data) => api.post('/time-slots', data),
-    update: (id, data) => api.patch(`/time-slots/${id}`, data),
-    delete: (id) => api.delete(`/time-slots/${id}`)
+    getAll: (params) => api.get('/timeslots', { params }),
+    getOne: (id) => api.get(`/timeslots/${id}`),
+    create: (data) => api.post('/timeslots', data),
+    update: (id, data) => api.patch(`/timeslots/${id}`, data),
+    delete: (id) => api.delete(`/timeslots/${id}`)
 };

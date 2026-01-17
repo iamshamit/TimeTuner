@@ -91,7 +91,8 @@ class TimetableSolver:
             add_classes_per_week_requirement,
             add_faculty_unavailability,
             add_fixed_slots,
-            add_max_daily_classes_per_batch
+            add_max_daily_classes_per_batch,
+            add_shift_based_scheduling
         )
         
         constraint_count = 0
@@ -102,6 +103,7 @@ class TimetableSolver:
         constraint_count += add_faculty_unavailability(self)
         constraint_count += add_fixed_slots(self)
         constraint_count += add_max_daily_classes_per_batch(self)
+        constraint_count += add_shift_based_scheduling(self)  # Shift-based scheduling
         
         logger.info(f"Added {constraint_count} hard constraints")
         self.stats['hard_constraints'] = constraint_count
@@ -296,6 +298,25 @@ class TimetableSolver:
         return rooms
     
     def _calculate_score(self) -> float:
-        if not self.penalties or self.solver.ObjectiveValue() == 0:
+        """Calculate a normalized score between 0 and 1.
+        
+        Score represents solution quality - higher is better.
+        We use a logarithmic scale to handle varying objective values.
+        """
+        obj_value = self.solver.ObjectiveValue()
+        if not self.penalties or obj_value == 0:
             return 1.0
-        return max(0.0, 1.0 - (self.solver.ObjectiveValue() / 1000))
+        
+        # Count total penalty variables for normalization
+        total_penalties = sum(len(p) for p in self.penalties.values())
+        if total_penalties == 0:
+            return 1.0
+        
+        # Normalize: lower objective = higher score
+        # Use ratio of objective to max possible (rough estimate)
+        max_possible = total_penalties * 10  # Assume avg weight ~10
+        normalized = obj_value / max_possible
+        
+        # Convert to 0-1 score (inverse, capped)
+        return max(0.1, min(1.0, 1.0 - normalized))
+

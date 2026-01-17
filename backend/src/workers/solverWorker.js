@@ -36,6 +36,16 @@ const solverWorker = new Worker('solver-jobs', async (job) => {
                         academicYear: new Date().getFullYear().toString(),
                         score: sol.score,
                         status: 'draft',
+                        // Save time slots so timetable view can display correct times
+                        timeSlots: {
+                            slots: solverInput.time_slots.map(ts => ({
+                                slotNumber: ts.slot_number,
+                                startTime: ts.start_time,
+                                endTime: ts.end_time,
+                                isBreak: ts.is_break,
+                                shift: ts.shift
+                            }))
+                        },
                         events: sol.events.map(e => ({
                             day: e.day,
                             slot: e.slot,

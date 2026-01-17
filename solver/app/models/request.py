@@ -18,6 +18,11 @@ class RoomType(str, Enum):
     SEMINAR = "seminar"
 
 
+class ShiftEnum(str, Enum):
+    MORNING = "morning"
+    AFTERNOON = "afternoon"
+
+
 # ============ INPUT MODELS ============
 
 class TimeSlotInput(BaseModel):
@@ -26,6 +31,7 @@ class TimeSlotInput(BaseModel):
     start_time: str
     end_time: str
     is_break: bool = False
+    shift: Optional[ShiftEnum] = None  # Will be inferred from start_time if not provided
 
 
 class UnavailableSlot(BaseModel):
@@ -87,6 +93,7 @@ class BatchInput(BaseModel):
     department_id: str
     semester: int = Field(..., ge=1, le=8)
     size: int = Field(..., ge=1)
+    shift: ShiftEnum = ShiftEnum.MORNING  # morning or afternoon
     subjects: List[BatchSubject]
 
 
@@ -122,7 +129,7 @@ class SoftConstraints(BaseModel):
     student_daily_load_limit: SoftConstraintConfig = SoftConstraintConfig(weight=7)
     even_distribution: SoftConstraintConfig = SoftConstraintConfig(weight=4)
     room_utilization: SoftConstraintConfig = SoftConstraintConfig(enabled=False, weight=3)
-    minimize_idle_gaps: SoftConstraintConfig = SoftConstraintConfig()
+    minimize_idle_gaps: SoftConstraintConfig = SoftConstraintConfig(weight=10)
     preferred_slot_matching: SoftConstraintConfig = SoftConstraintConfig(enabled=False, weight=2)
 
 

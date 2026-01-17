@@ -144,6 +144,7 @@ class SolverJobService {
                 department_id: b.department.toString(),
                 semester: b.semester,
                 size: b.size,
+                shift: b.shift || 'morning',  // Pass batch shift to solver
                 subjects: b.subjects.map(bs => ({
                     subject_id: bs.subject._id.toString(),
                     classes_per_week: bs.classesPerWeek,
@@ -153,12 +154,17 @@ class SolverJobService {
 
             days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
             slots_per_day: timeSlotConfig?.slots?.filter(s => !s.isBreak)?.length || 6,
-            time_slots: (timeSlotConfig?.slots || []).map(s => ({
-                slot_number: s.slotNumber,
-                start_time: s.startTime,
-                end_time: s.endTime,
-                is_break: s.isBreak || false
-            })),
+            time_slots: (timeSlotConfig?.slots || []).map(s => {
+                // Infer shift from start time (before 13:00 = morning)
+                const hour = parseInt(s.startTime.split(':')[0]);
+                return {
+                    slot_number: s.slotNumber,
+                    start_time: s.startTime,
+                    end_time: s.endTime,
+                    is_break: s.isBreak || false,
+                    shift: hour < 13 ? 'morning' : 'afternoon'
+                };
+            }),
 
             constraints: {
                 hard: constraints?.constraints?.hard || {},

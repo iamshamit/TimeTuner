@@ -149,3 +149,41 @@ def add_max_daily_classes_per_batch(solver: 'TimetableSolver') -> int:
                 constraint_count += 1
     
     return constraint_count
+
+
+def add_shift_based_scheduling(solver: 'TimetableSolver') -> int:
+    """Restrict batches to only their designated shift's time slots.
+    
+    Morning shift batches can only be scheduled in morning slots.
+    Afternoon shift batches can only be scheduled in afternoon slots.
+    """
+    constraint_count = 0
+    
+    # Build a map of slot -> shift
+    # If shift is explicitly set on the slot, use it
+    # Otherwise, infer from start_time (before 13:00 = morning)
+    slot_shifts = {}
+    for ts in solver.request.time_slots:
+        if ts.is_break:
+            continue
+        if ts.shift:
+            slot_shifts[ts.slot_number] = ts.shift.value
+        else:
+            # Infer from start time
+            hour = int(ts.start_time.split(':')[0])
+            slot_shifts[ts.slot_number] = 'morning' if hour < 13 else 'afternoon'
+    
+    # For each batch, block slots that don't match its shift
+    for batch in solver.request.batches:
+        batch_shift = batch.shift.value  # 'morning' or 'afternoon'
+        
+        for (b_id, s_id, d, sl, r_id, f_id), var in solver.x.items():
+            if b_id == batch.id:
+                slot_shift = slot_shifts.get(sl, 'morning')
+                
+                # If slot shift doesn't match batch shift, block it
+                if slot_shift != batch_shift:
+                    solver.model.Add(var == 0)
+                    constraint_count += 1
+    
+    return constraint_count
