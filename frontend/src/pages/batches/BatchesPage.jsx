@@ -1,11 +1,24 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { batchesAPI, departmentsAPI, subjectsAPI, facultiesAPI } from '../../services/api';
-import Table from '../../components/common/Table';
-import Button from '../../components/common/Button';
-import Modal from '../../components/common/Modal';
-import Input, { Select } from '../../components/common/Input';
-import ConfirmDialog from '../../components/common/ConfirmDialog';
+import { motion } from 'framer-motion';
+import { Plus, GraduationCap, AlertTriangle, BookOpen, X } from 'lucide-react';
+import { batchesAPI, departmentsAPI, subjectsAPI, facultiesAPI } from '@/services/api';
+import Table from '@/components/common/Table';
+import Button from '@/components/common/Button';
+import Modal from '@/components/common/Modal';
+import Input, { Select } from '@/components/common/Input';
+import ConfirmDialog from '@/components/common/ConfirmDialog';
+import { cn } from '@/lib/utils';
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+};
 
 export default function BatchesPage() {
     const [modalOpen, setModalOpen] = useState(false);
@@ -101,7 +114,6 @@ export default function BatchesPage() {
 
     const openSubjectsModal = (batch) => {
         setEditing(batch);
-        // Load existing subject assignments - read from assignedFaculty
         const existing = (batch.subjects || []).map(s => ({
             subject: s.subject?._id || s.subject,
             faculty: s.assignedFaculty?._id || s.assignedFaculty,
@@ -136,7 +148,6 @@ export default function BatchesPage() {
     const handleSubjectsSubmit = (e) => {
         e.preventDefault();
         setError('');
-        // Filter out empty assignments and transform faculty -> assignedFaculty
         const validAssignments = subjectAssignments
             .filter(a => a.subject && a.faculty)
             .map(a => ({
@@ -169,7 +180,6 @@ export default function BatchesPage() {
     const allSubjects = subjData?.data?.data || [];
     const allFaculties = facData?.data?.data || [];
 
-    // Filter subjects by batch's semester and department
     const getAvailableSubjects = () => {
         if (!editing) return allSubjects;
         return allSubjects.filter(s =>
@@ -178,7 +188,6 @@ export default function BatchesPage() {
         );
     };
 
-    // Filter faculties by batch's department
     const getAvailableFaculties = () => {
         if (!editing) return allFaculties;
         return allFaculties.filter(f =>
@@ -196,8 +205,12 @@ export default function BatchesPage() {
             key: 'subjects',
             label: 'Subjects',
             render: (val) => (
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${(val?.length || 0) > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
+                <span className={cn(
+                    'px-2.5 py-1 rounded-full text-xs font-medium border',
+                    (val?.length || 0) > 0
+                        ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                        : 'bg-red-500/20 text-red-400 border-red-500/30'
+                )}>
                     {val?.length || 0} assigned
                 </span>
             )
@@ -207,44 +220,84 @@ export default function BatchesPage() {
             label: 'Actions',
             render: (_, row) => (
                 <div className="flex gap-2">
-                    <button onClick={(e) => { e.stopPropagation(); openSubjectsModal(row); }} className="text-purple-600 hover:text-purple-800 font-medium">Subjects</button>
-                    <button onClick={(e) => { e.stopPropagation(); openEdit(row); }} className="text-blue-600 hover:text-blue-800">Edit</button>
-                    <button onClick={(e) => { e.stopPropagation(); setEditing(row); setDeleteOpen(true); }} className="text-red-600 hover:text-red-800">Delete</button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); openSubjectsModal(row); }}
+                        className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
+                    >
+                        Subjects
+                    </button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); openEdit(row); }}
+                        className="text-primary-400 hover:text-primary-300 transition-colors"
+                    >
+                        Edit
+                    </button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setEditing(row); setDeleteOpen(true); }}
+                        className="text-red-400 hover:text-red-300 transition-colors"
+                    >
+                        Delete
+                    </button>
                 </div>
             )
         }
     ];
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-gray-900">Batches</h1>
-                <Button onClick={openCreate}>+ Add Batch</Button>
-            </div>
+        <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-6"
+        >
+            <motion.div variants={itemVariants} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-accent-purple/20 border border-purple-500/30">
+                        <GraduationCap className="w-5 h-5 text-purple-400" />
+                    </div>
+                    <h1 className="text-2xl font-bold text-text-primary">Batches</h1>
+                </div>
+                <Button onClick={openCreate}>
+                    <Plus className="w-4 h-4" />
+                    Add Batch
+                </Button>
+            </motion.div>
 
-            <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg text-sm">
-                ⚠️ <strong>Important:</strong> Click "Subjects" to assign subjects and faculties to each batch. The solver needs this to generate timetables.
-            </div>
+            <motion.div
+                variants={itemVariants}
+                className="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 px-4 py-3 rounded-lg flex items-center gap-3"
+            >
+                <AlertTriangle className="w-5 h-5" />
+                <p className="text-sm">
+                    <strong>Important:</strong> Click "Subjects" to assign subjects and faculties to each batch. The solver needs this to generate timetables.
+                </p>
+            </motion.div>
 
             {error && !modalOpen && !subjectsModalOpen && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg flex items-center justify-between"
+                >
                     {error}
-                    <button onClick={() => setError('')} className="float-right font-bold">×</button>
-                </div>
+                    <button onClick={() => setError('')} className="text-red-400 hover:text-red-300 font-bold">×</button>
+                </motion.div>
             )}
 
-            <Table
-                columns={columns}
-                data={data?.data?.data || []}
-                loading={isLoading}
-                emptyMessage="No batches found"
-            />
+            <motion.div variants={itemVariants}>
+                <Table
+                    columns={columns}
+                    data={data?.data?.data || []}
+                    loading={isLoading}
+                    emptyMessage="No batches found"
+                />
+            </motion.div>
 
             {/* Create/Edit Batch Modal */}
             <Modal isOpen={modalOpen} onClose={closeModal} title={editing ? 'Edit Batch' : 'Add Batch'} size="lg">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm">
+                        <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-2 rounded-lg text-sm">
                             {error}
                         </div>
                     )}
@@ -321,18 +374,24 @@ export default function BatchesPage() {
             <Modal isOpen={subjectsModalOpen} onClose={() => setSubjectsModalOpen(false)} title={`Assign Subjects - ${editing?.code}`} size="lg">
                 <form onSubmit={handleSubjectsSubmit} className="space-y-4">
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm">
+                        <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-2 rounded-lg text-sm">
                             {error}
                         </div>
                     )}
 
-                    <p className="text-sm text-gray-600">
-                        Assign subjects and their teaching faculty for <strong>{editing?.name}</strong> (Semester {editing?.semester})
+                    <p className="text-sm text-text-muted">
+                        Assign subjects and their teaching faculty for <strong className="text-text-primary">{editing?.name}</strong> (Semester {editing?.semester})
                     </p>
 
-                    <div className="space-y-3 max-h-80 overflow-y-auto">
+                    <div className="space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
                         {subjectAssignments.map((assignment, idx) => (
-                            <div key={idx} className="flex gap-3 items-end p-3 bg-gray-50 rounded-lg">
+                            <motion.div
+                                key={idx}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: idx * 0.1 }}
+                                className="flex gap-3 items-end p-3 bg-surface-50 rounded-lg border border-border-glass"
+                            >
                                 <div className="flex-1">
                                     <Select
                                         label="Subject"
@@ -370,20 +429,21 @@ export default function BatchesPage() {
                                 <button
                                     type="button"
                                     onClick={() => removeSubjectRow(idx)}
-                                    className="p-2 text-red-600 hover:bg-red-50 rounded"
+                                    className="p-2 text-red-400 hover:bg-red-500/10 rounded transition-colors"
                                     disabled={subjectAssignments.length === 1}
                                 >
-                                    ✕
+                                    <X className="w-4 h-4" />
                                 </button>
-                            </div>
+                            </motion.div>
                         ))}
                     </div>
 
                     <Button type="button" variant="ghost" onClick={addSubjectRow}>
-                        + Add Another Subject
+                        <Plus className="w-4 h-4" />
+                        Add Another Subject
                     </Button>
 
-                    <div className="flex justify-end gap-3 pt-4 border-t">
+                    <div className="flex justify-end gap-3 pt-4 border-t border-border-glass">
                         <Button variant="ghost" type="button" onClick={() => setSubjectsModalOpen(false)}>Cancel</Button>
                         <Button type="submit" loading={assignSubjectsMutation.isPending}>
                             Save Assignments
@@ -400,6 +460,6 @@ export default function BatchesPage() {
                 message={`Are you sure you want to delete "${editing?.name}"?`}
                 loading={deleteMutation.isPending}
             />
-        </div>
+        </motion.div>
     );
 }

@@ -1,5 +1,8 @@
-export function cn(...classes) {
-    return classes.filter(Boolean).join(' ');
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export function cn(...inputs) {
+    return twMerge(clsx(inputs));
 }
 
 export function formatDate(date) {
@@ -17,17 +20,47 @@ export function getDayName(day) {
     return days[day] || day;
 }
 
+// Status colors for dark glassmorphism theme
 export function getStatusColor(status) {
     const colors = {
-        draft: 'bg-gray-100 text-gray-800',
-        review: 'bg-yellow-100 text-yellow-800',
-        approved: 'bg-blue-100 text-blue-800',
-        published: 'bg-green-100 text-green-800',
-        archived: 'bg-gray-100 text-gray-600',
-        pending: 'bg-yellow-100 text-yellow-800',
-        running: 'bg-blue-100 text-blue-800',
-        completed: 'bg-green-100 text-green-800',
-        failed: 'bg-red-100 text-red-800'
+        draft: 'badge-draft',
+        review: 'badge-review',
+        approved: 'badge-approved',
+        published: 'badge-published',
+        archived: 'badge-archived',
+        pending: 'badge-pending',
+        running: 'badge-running',
+        completed: 'badge-completed',
+        failed: 'badge-failed'
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || 'badge-draft';
 }
+
+// Color mappings for stat cards
+export const statCardColors = {
+    blue: {
+        bg: 'bg-primary-500/20',
+        text: 'text-primary-400',
+        border: 'border-primary-500/30',
+    },
+    green: {
+        bg: 'bg-green-500/20',
+        text: 'text-green-400',
+        border: 'border-green-500/30',
+    },
+    yellow: {
+        bg: 'bg-yellow-500/20',
+        text: 'text-yellow-400',
+        border: 'border-yellow-500/30',
+    },
+    purple: {
+        bg: 'bg-accent-purple/20',
+        text: 'text-purple-400',
+        border: 'border-purple-500/30',
+    },
+    pink: {
+        bg: 'bg-pink-500/20',
+        text: 'text-pink-400',
+        border: 'border-pink-500/30',
+    },
+};

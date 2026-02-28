@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { authAPI } from '../../services/api';
-import useAuthStore from '../../store/authStore';
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
+import { motion } from 'framer-motion';
+import { Timer, Mail, Lock, ArrowRight } from 'lucide-react';
+import { authAPI } from '@/services/api';
+import useAuthStore from '@/store/authStore';
+import Button from '@/components/common/Button';
+import Input from '@/components/common/Input';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -34,49 +36,142 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
-                <div className="text-center mb-8">
-                    <span className="text-5xl">⏱️</span>
-                    <h1 className="text-2xl font-bold text-gray-900 mt-4">TimeTuner</h1>
-                    <p className="text-gray-500 mt-2">Smart Timetable Scheduler</p>
-                </div>
+        <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+            {/* Animated Background Orbs */}
+            <motion.div
+                animate={{
+                    x: [0, 50, 0],
+                    y: [0, -30, 0],
+                    scale: [1, 1.1, 1],
+                }}
+                transition={{
+                    duration: 20,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                }}
+                className="absolute -top-32 -left-32 w-96 h-96 bg-primary-500 rounded-full blur-3xl opacity-20"
+            />
+            <motion.div
+                animate={{
+                    x: [0, -40, 0],
+                    y: [0, 40, 0],
+                    scale: [1, 1.2, 1],
+                }}
+                transition={{
+                    duration: 25,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                }}
+                className="absolute -bottom-32 -right-32 w-96 h-96 bg-accent-purple rounded-full blur-3xl opacity-20"
+            />
+            <motion.div
+                animate={{
+                    x: [0, 30, 0],
+                    y: [0, -20, 0],
+                }}
+                transition={{
+                    duration: 18,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                }}
+                className="absolute top-1/4 right-1/4 w-64 h-64 bg-accent-pink rounded-full blur-3xl opacity-10"
+            />
 
+            {/* Login Card */}
+            <motion.div
+                initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+                className="glass-card w-full max-w-md p-8 relative z-10"
+            >
+                {/* Logo */}
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="text-center mb-8"
+                >
+                    <motion.div
+                        animate={{
+                            boxShadow: [
+                                '0 0 20px rgba(99, 102, 241, 0.3)',
+                                '0 0 40px rgba(99, 102, 241, 0.5)',
+                                '0 0 20px rgba(99, 102, 241, 0.3)',
+                            ]
+                        }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary-500 to-accent-purple flex items-center justify-center mb-4"
+                    >
+                        <Timer className="w-8 h-8 text-white" />
+                    </motion.div>
+                    <h1 className="text-2xl font-bold text-gradient">TimeTuner</h1>
+                    <p className="text-text-muted mt-2">Smart Timetable Scheduler</p>
+                </motion.div>
+
+                {/* Error Alert */}
                 {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg mb-6"
+                    >
                         {error}
-                    </div>
+                    </motion.div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    <Input
-                        label="Email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="admin@example.com"
-                        required
-                    />
+                {/* Form */}
+                <motion.form
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    onSubmit={handleSubmit}
+                    className="space-y-5"
+                >
+                    <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="Email address"
+                            required
+                            className="glass-input w-full pl-11"
+                        />
+                    </div>
 
-                    <Input
-                        label="Password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        required
-                    />
+                    <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Password"
+                            required
+                            className="glass-input w-full pl-11"
+                        />
+                    </div>
 
-                    <Button type="submit" className="w-full" loading={loading}>
+                    <Button type="submit" className="w-full" loading={loading} variant="glow">
                         Sign In
+                        <ArrowRight className="w-4 h-4" />
                     </Button>
-                </form>
+                </motion.form>
 
-                <div className="mt-6 text-center text-sm text-gray-500">
-                    <p>Demo account:</p>
-                    <p className="text-gray-600 mt-1">admin@college.edu / Admin@123</p>
-                </div>
-            </div>
+                {/* Demo Account */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="mt-8 pt-6 border-t border-border-glass text-center"
+                >
+                    <p className="text-sm text-text-muted">Demo account:</p>
+                    <p className="text-sm text-text-primary mt-1">
+                        <span className="text-primary-400">admin@college.edu</span>
+                        <span className="text-text-muted"> / </span>
+                        <span className="text-primary-400">Admin@123</span>
+                    </p>
+                </motion.div>
+            </motion.div>
         </div>
     );
 }

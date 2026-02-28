@@ -1,16 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { timeSlotsAPI } from '../../services/api';
-import Button from '../../components/common/Button';
-import Card from '../../components/common/Card';
-import Input from '../../components/common/Input';
+import { motion } from 'framer-motion';
+import { Clock, Edit3, Save, X, Plus, Sunrise, Sun, Coffee } from 'lucide-react';
+import { timeSlotsAPI } from '@/services/api';
+import Button from '@/components/common/Button';
+import Card from '@/components/common/Card';
+import Input from '@/components/common/Input';
+import { cn } from '@/lib/utils';
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+};
 
 export default function TimeSlotsPage() {
     const queryClient = useQueryClient();
     const [editing, setEditing] = useState(false);
     const [error, setError] = useState('');
 
-    // Two shifts with their own slots
     const [morningSlots, setMorningSlots] = useState([
         { startTime: '09:00', endTime: '10:00' },
         { startTime: '10:00', endTime: '11:00' },
@@ -28,11 +40,9 @@ export default function TimeSlotsPage() {
         queryFn: () => timeSlotsAPI.getAll({ limit: 1 })
     });
 
-    // Load existing slots on data change
     useEffect(() => {
         const config = data?.data?.data?.[0];
         if (config?.slots) {
-            // Separate into morning (before 13:00) and afternoon (13:00 and after)
             const morning = [];
             const afternoon = [];
             config.slots.forEach(s => {
@@ -66,12 +76,10 @@ export default function TimeSlotsPage() {
         onError: (err) => setError(err?.response?.data?.message || 'Failed to save')
     });
 
-    // Combine slots and save
     const handleSave = () => {
         const allSlots = [];
         let slotNumber = 1;
 
-        // Add morning slots
         morningSlots.forEach(slot => {
             allSlots.push({
                 slotNumber: slotNumber++,
@@ -81,7 +89,6 @@ export default function TimeSlotsPage() {
             });
         });
 
-        // Add afternoon slots
         afternoonSlots.forEach(slot => {
             allSlots.push({
                 slotNumber: slotNumber++,
@@ -95,7 +102,6 @@ export default function TimeSlotsPage() {
     };
 
     const handleCancel = () => {
-        // Reload from data
         const config = data?.data?.data?.[0];
         if (config?.slots) {
             const morning = [];
@@ -116,7 +122,26 @@ export default function TimeSlotsPage() {
         setEditing(false);
     };
 
-    // Slot management functions
+    const addHour = (timeStr) => {
+        const [h, m] = timeStr.split(':').map(Number);
+        const newH = (h + 1) % 24;
+        return `${String(newH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    };
+
+    const getDuration = (start, end) => {
+        const [sh, sm] = start.split(':').map(Number);
+        const [eh, em] = end.split(':').map(Number);
+        return (eh * 60 + em) - (sh * 60 + sm);
+    };
+
+    const getGap = (slots, idx) => {
+        if (idx === 0) return null;
+        const prevEnd = slots[idx - 1].endTime;
+        const currStart = slots[idx].startTime;
+        const gap = getDuration(prevEnd, currStart);
+        return gap > 0 ? gap : null;
+    };
+
     const addMorningSlot = () => {
         const lastSlot = morningSlots[morningSlots.length - 1];
         const newStart = lastSlot?.endTime || '09:00';
@@ -151,150 +176,165 @@ export default function TimeSlotsPage() {
         setAfternoonSlots(afternoonSlots.filter((_, i) => i !== idx));
     };
 
-    // Helper: add 1 hour to time string
-    const addHour = (timeStr) => {
-        const [h, m] = timeStr.split(':').map(Number);
-        const newH = (h + 1) % 24;
-        return `${String(newH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    };
-
-    // Calculate duration in minutes
-    const getDuration = (start, end) => {
-        const [sh, sm] = start.split(':').map(Number);
-        const [eh, em] = end.split(':').map(Number);
-        return (eh * 60 + em) - (sh * 60 + sm);
-    };
-
-    // Calculate gap between slots
-    const getGap = (slots, idx) => {
-        if (idx === 0) return null;
-        const prevEnd = slots[idx - 1].endTime;
-        const currStart = slots[idx].startTime;
-        const gap = getDuration(prevEnd, currStart);
-        return gap > 0 ? gap : null;
-    };
-
     if (isLoading) {
-        return <div className="flex justify-center py-12">Loading...</div>;
+        return <div className="flex justify-center py-12 text-text-muted">Loading...</div>;
     }
 
-    // View mode slot display
-    const SlotDisplay = ({ slots, shiftLabel }) => (
+    const SlotDisplay = ({ slots }) => (
         <div className="space-y-2">
             {slots.map((slot, idx) => {
                 const gap = getGap(slots, idx);
                 return (
-                    <div key={idx}>
+                    <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.05 }}
+                    >
                         {gap && (
                             <div className="flex items-center justify-center py-1">
-                                <span className="text-xs text-yellow-600 bg-yellow-50 px-3 py-1 rounded-full">
-                                    ☕ {gap} min break
+                                <span className="text-xs text-yellow-400 bg-yellow-500/10 border border-yellow-500/30 px-3 py-1 rounded-full flex items-center gap-1">
+                                    <Coffee className="w-3 h-3" />
+                                    {gap} min break
                                 </span>
                             </div>
                         )}
-                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                            <span className="text-sm font-medium text-gray-500 w-16">Slot {idx + 1}</span>
-                            <span className="font-medium">{slot.startTime}</span>
-                            <span className="text-gray-400">→</span>
-                            <span className="font-medium">{slot.endTime}</span>
-                            <span className="text-sm text-gray-500 ml-auto">
+                        <div className="flex items-center gap-3 p-3 bg-surface-50 border border-border-glass rounded-lg">
+                            <span className="text-sm font-medium text-text-muted w-16">Slot {idx + 1}</span>
+                            <span className="font-medium text-text-primary">{slot.startTime}</span>
+                            <span className="text-text-muted">to</span>
+                            <span className="font-medium text-text-primary">{slot.endTime}</span>
+                            <span className="text-sm text-text-muted ml-auto">
                                 {getDuration(slot.startTime, slot.endTime)} mins
                             </span>
                         </div>
-                    </div>
+                    </motion.div>
                 );
             })}
         </div>
     );
 
-    // Edit mode slot editor
-    const SlotEditor = ({ slots, updateSlot, removeSlot, shiftLabel }) => (
+    const SlotEditor = ({ slots, updateSlot, removeSlot }) => (
         <div className="space-y-2">
             {slots.map((slot, idx) => {
                 const gap = getGap(slots, idx);
                 return (
-                    <div key={idx}>
+                    <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.05 }}
+                    >
                         {gap && (
                             <div className="flex items-center justify-center py-1">
-                                <span className="text-xs text-yellow-600 bg-yellow-50 px-3 py-1 rounded-full">
-                                    ☕ {gap} min break
+                                <span className="text-xs text-yellow-400 bg-yellow-500/10 border border-yellow-500/30 px-3 py-1 rounded-full flex items-center gap-1">
+                                    <Coffee className="w-3 h-3" />
+                                    {gap} min break
                                 </span>
                             </div>
                         )}
-                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                            <span className="text-sm font-medium text-gray-500 w-16">Slot {idx + 1}</span>
+                        <div className="flex items-center gap-3 p-3 bg-surface-50 border border-border-glass rounded-lg">
+                            <span className="text-sm font-medium text-text-muted w-16">Slot {idx + 1}</span>
                             <Input
                                 type="time"
                                 value={slot.startTime}
                                 onChange={(e) => updateSlot(idx, 'startTime', e.target.value)}
                                 className="w-32"
                             />
-                            <span className="text-gray-400">→</span>
+                            <span className="text-text-muted">to</span>
                             <Input
                                 type="time"
                                 value={slot.endTime}
                                 onChange={(e) => updateSlot(idx, 'endTime', e.target.value)}
                                 className="w-32"
                             />
-                            <span className="text-sm text-gray-500 w-20">
+                            <span className="text-sm text-text-muted w-20">
                                 {getDuration(slot.startTime, slot.endTime)} mins
                             </span>
                             <button
                                 onClick={() => removeSlot(idx)}
-                                className="p-2 text-red-500 hover:bg-red-50 rounded"
+                                className="p-2 text-red-400 hover:bg-red-500/10 rounded transition-colors"
                                 disabled={slots.length === 1}
                             >
-                                ✕
+                                <X className="w-4 h-4" />
                             </button>
                         </div>
-                    </div>
+                    </motion.div>
                 );
             })}
         </div>
     );
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Time Slots Configuration</h1>
-                    <p className="text-gray-500 mt-1">Configure class time slots for each shift</p>
+        <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-6"
+        >
+            <motion.div variants={itemVariants} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary-500/20 border border-primary-500/30">
+                        <Clock className="w-5 h-5 text-primary-400" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-text-primary">Time Slots Configuration</h1>
+                        <p className="text-text-muted mt-1">Configure class time slots for each shift</p>
+                    </div>
                 </div>
                 {editing ? (
                     <div className="flex gap-2">
-                        <Button variant="ghost" onClick={handleCancel}>Cancel</Button>
+                        <Button variant="ghost" onClick={handleCancel}>
+                            <X className="w-4 h-4" />
+                            Cancel
+                        </Button>
                         <Button onClick={handleSave} loading={saveMutation.isPending}>
-                            💾 Save Changes
+                            <Save className="w-4 h-4" />
+                            Save Changes
                         </Button>
                     </div>
                 ) : (
-                    <Button onClick={() => setEditing(true)}>✏️ Edit Time Slots</Button>
+                    <Button onClick={() => setEditing(true)}>
+                        <Edit3 className="w-4 h-4" />
+                        Edit Time Slots
+                    </Button>
                 )}
-            </div>
+            </motion.div>
 
             {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg"
+                >
                     {error}
-                </div>
+                </motion.div>
             )}
 
             {editing && (
-                <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg text-sm">
-                    💡 <strong>Tip:</strong> To add a break, leave a gap between slots. For example, end Slot 1 at 10:00 and start Slot 2 at 10:15 for a 15-minute break.
-                </div>
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-primary-500/10 border border-primary-500/30 text-primary-400 px-4 py-3 rounded-lg text-sm"
+                >
+                    <strong>Tip:</strong> To add a break, leave a gap between slots. For example, end Slot 1 at 10:00 and start Slot 2 at 10:15 for a 15-minute break.
+                </motion.div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Morning Shift */}
                 <Card>
                     <div className="flex items-center justify-between mb-4">
-                        <div>
-                            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                                🌅 Morning Shift
-                            </h2>
-                            <p className="text-sm text-gray-500">Classes before lunch</p>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-orange-500/20 border border-orange-500/30">
+                                <Sunrise className="w-5 h-5 text-orange-400" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-semibold text-text-primary">Morning Shift</h2>
+                                <p className="text-sm text-text-muted">Classes before lunch</p>
+                            </div>
                         </div>
-                        <span className="text-sm text-gray-500">{morningSlots.length} slots</span>
+                        <span className="text-sm text-text-muted">{morningSlots.length} slots</span>
                     </div>
 
                     {editing ? (
@@ -303,31 +343,34 @@ export default function TimeSlotsPage() {
                                 slots={morningSlots}
                                 updateSlot={updateMorningSlot}
                                 removeSlot={removeMorningSlot}
-                                shiftLabel="morning"
                             />
                             <Button
                                 variant="ghost"
                                 onClick={addMorningSlot}
                                 className="mt-4 w-full"
                             >
-                                + Add Morning Slot
+                                <Plus className="w-4 h-4" />
+                                Add Morning Slot
                             </Button>
                         </>
                     ) : (
-                        <SlotDisplay slots={morningSlots} shiftLabel="morning" />
+                        <SlotDisplay slots={morningSlots} />
                     )}
                 </Card>
 
                 {/* Afternoon Shift */}
                 <Card>
                     <div className="flex items-center justify-between mb-4">
-                        <div>
-                            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                                🌤️ Afternoon Shift
-                            </h2>
-                            <p className="text-sm text-gray-500">Classes after lunch</p>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-blue-500/20 border border-blue-500/30">
+                                <Sun className="w-5 h-5 text-blue-400" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-semibold text-text-primary">Afternoon Shift</h2>
+                                <p className="text-sm text-text-muted">Classes after lunch</p>
+                            </div>
                         </div>
-                        <span className="text-sm text-gray-500">{afternoonSlots.length} slots</span>
+                        <span className="text-sm text-text-muted">{afternoonSlots.length} slots</span>
                     </div>
 
                     {editing ? (
@@ -336,48 +379,49 @@ export default function TimeSlotsPage() {
                                 slots={afternoonSlots}
                                 updateSlot={updateAfternoonSlot}
                                 removeSlot={removeAfternoonSlot}
-                                shiftLabel="afternoon"
                             />
                             <Button
                                 variant="ghost"
                                 onClick={addAfternoonSlot}
                                 className="mt-4 w-full"
                             >
-                                + Add Afternoon Slot
+                                <Plus className="w-4 h-4" />
+                                Add Afternoon Slot
                             </Button>
                         </>
                     ) : (
-                        <SlotDisplay slots={afternoonSlots} shiftLabel="afternoon" />
+                        <SlotDisplay slots={afternoonSlots} />
                     )}
                 </Card>
-            </div>
+            </motion.div>
 
             {/* Summary */}
-            <Card>
-                <h3 className="font-medium text-gray-900 mb-4">📊 Summary</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div className="p-3 bg-orange-50 rounded-lg">
-                        <span className="text-orange-600 font-medium">Morning Slots</span>
-                        <p className="text-2xl font-bold text-orange-700">{morningSlots.length}</p>
+            <motion.div variants={itemVariants}>
+                <Card title="Summary">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+                            <span className="text-orange-400 font-medium text-sm">Morning Slots</span>
+                            <p className="text-2xl font-bold text-text-primary mt-1">{morningSlots.length}</p>
+                        </div>
+                        <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                            <span className="text-blue-400 font-medium text-sm">Afternoon Slots</span>
+                            <p className="text-2xl font-bold text-text-primary mt-1">{afternoonSlots.length}</p>
+                        </div>
+                        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                            <span className="text-green-400 font-medium text-sm">Total Slots</span>
+                            <p className="text-2xl font-bold text-text-primary mt-1">{morningSlots.length + afternoonSlots.length}</p>
+                        </div>
+                        <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+                            <span className="text-purple-400 font-medium text-sm">Day Ends</span>
+                            <p className="text-2xl font-bold text-text-primary mt-1">
+                                {afternoonSlots.length > 0
+                                    ? afternoonSlots[afternoonSlots.length - 1].endTime
+                                    : morningSlots[morningSlots.length - 1]?.endTime || '-'}
+                            </p>
+                        </div>
                     </div>
-                    <div className="p-3 bg-blue-50 rounded-lg">
-                        <span className="text-blue-600 font-medium">Afternoon Slots</span>
-                        <p className="text-2xl font-bold text-blue-700">{afternoonSlots.length}</p>
-                    </div>
-                    <div className="p-3 bg-green-50 rounded-lg">
-                        <span className="text-green-600 font-medium">Total Slots</span>
-                        <p className="text-2xl font-bold text-green-700">{morningSlots.length + afternoonSlots.length}</p>
-                    </div>
-                    <div className="p-3 bg-purple-50 rounded-lg">
-                        <span className="text-purple-600 font-medium">Day Ends</span>
-                        <p className="text-2xl font-bold text-purple-700">
-                            {afternoonSlots.length > 0
-                                ? afternoonSlots[afternoonSlots.length - 1].endTime
-                                : morningSlots[morningSlots.length - 1]?.endTime || '-'}
-                        </p>
-                    </div>
-                </div>
-            </Card>
-        </div>
+                </Card>
+            </motion.div>
+        </motion.div>
     );
 }

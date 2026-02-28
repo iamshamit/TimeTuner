@@ -1,14 +1,18 @@
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { timetablesAPI } from '../../services/api';
-import Card from '../../components/common/Card';
-import Button from '../../components/common/Button';
-import { getStatusColor, getDayName } from '../../lib/utils';
-import useAuthStore from '../../store/authStore';
+import { motion } from 'framer-motion';
+import { Send, CheckCircle, Globe, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { timetablesAPI } from '@/services/api';
+import Card from '@/components/common/Card';
+import Button from '@/components/common/Button';
+import { LoadingScreen } from '@/components/common/LoadingSpinner';
+import EmptyState from '@/components/common/EmptyState';
+import { getStatusColor, getDayName, cn } from '@/lib/utils';
+import useAuthStore from '@/store/authStore';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-// Default time slots - can be overridden by timetable's timeSlots
 const DEFAULT_TIME_SLOTS = [
     { slot: 1, startTime: '09:00', endTime: '09:50' },
     { slot: 2, startTime: '09:50', endTime: '10:40' },
@@ -17,6 +21,19 @@ const DEFAULT_TIME_SLOTS = [
     { slot: 5, startTime: '14:00', endTime: '14:50' },
     { slot: 6, startTime: '14:50', endTime: '15:40' },
 ];
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: { staggerChildren: 0.1 },
+    },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+};
 
 export default function TimetableView() {
     const { id } = useParams();
@@ -46,17 +63,28 @@ export default function TimetableView() {
     });
 
     if (isLoading) {
-        return <div className="flex justify-center py-12">Loading...</div>;
+        return <LoadingScreen message="Loading timetable..." />;
     }
 
     if (!timetable) {
-        return <div className="text-center py-12 text-gray-500">Timetable not found</div>;
+        return (
+            <EmptyState
+                title="Timetable not found"
+                description="The timetable you're looking for doesn't exist or has been deleted."
+                action={
+                    <Link to="/timetables">
+                        <Button variant="outline">
+                            <ArrowLeft className="w-4 h-4" />
+                            Back to Timetables
+                        </Button>
+                    </Link>
+                }
+            />
+        );
     }
 
-    // Get time slots from timetable or use defaults
     const timeSlots = timetable.timeSlots?.slots || DEFAULT_TIME_SLOTS;
 
-    // Group events by batch
     const eventsByBatch = {};
     (timetable.events || []).forEach((event) => {
         const batchId = event.batch?._id || event.batch;
@@ -73,26 +101,62 @@ export default function TimetableView() {
         return events.find(e => e.day === day && e.slot === slot);
     };
 
-    const getSlotTime = (slotNum) => {
-        const slot = timeSlots.find(s => s.slot === slotNum || s.slotNumber === slotNum);
-        if (slot) {
-            return `${slot.startTime} - ${slot.endTime}`;
-        }
-        return `Slot ${slotNum}`;
-    };
+    const scorePercentage = ((timetable.score || 0) * 100).toFixed(0);
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
+        <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-6"
+        >
+            {/* Header */}
+            <motion.div variants={itemVariants} className="flex items-start justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">{timetable.name}</h1>
-                    <div className="flex items-center gap-4 mt-2">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(timetable.status)}`}>
+                    <div className="flex items-center gap-3 mb-2">
+                        <Link to="/timetables" className="p-2 rounded-lg hover:bg-surface-50 text-text-muted hover:text-text-primary transition-colors">
+                            <ArrowLeft className="w-5 h-5" />
+                        </Link>
+                        <h1 className="text-2xl font-bold text-text-primary">{timetable.name}</h1>
+                    </div>
+                    <div className="flex items-center gap-4 ml-11">
+                        <span className={cn('px-3 py-1 rounded-full text-xs font-medium', getStatusColor(timetable.status))}>
                             {timetable.status}
                         </span>
-                        <span className="text-gray-500">
-                            Score: {((timetable.score || 0) * 100).toFixed(0)}%
-                        </span>
+                        {/* Score Indicator */}
+                        <div className="flex items-center gap-2">
+                            <div className="relative w-10 h-10">
+                                <svg className="w-10 h-10 -rotate-90">
+                                    <circle
+                                        cx="20"
+                                        cy="20"
+                                        r="16"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                        className="text-surface"
+                                    />
+                                    <motion.circle
+                                        cx="20"
+                                        cy="20"
+                                        r="16"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                        strokeLinecap="round"
+                                        className="text-primary-500"
+                                        initial={{ strokeDasharray: '0 100' }}
+                                        animate={{ strokeDasharray: `${scorePercentage} 100` }}
+                                        transition={{ duration: 1, ease: 'easeOut' }}
+                                        style={{ strokeDashoffset: 0 }}
+                                    />
+                                </svg>
+                                <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-text-primary">
+                                    {scorePercentage}%
+                                </span>
+                            </div>
+                            <span className="text-sm text-text-muted">Score</span>
+                        </div>
                     </div>
                 </div>
 
@@ -102,6 +166,7 @@ export default function TimetableView() {
                             onClick={() => submitMutation.mutate()}
                             loading={submitMutation.isPending}
                         >
+                            <Send className="w-4 h-4" />
                             Submit for Review
                         </Button>
                     )}
@@ -112,72 +177,107 @@ export default function TimetableView() {
                             onClick={() => approveMutation.mutate()}
                             loading={approveMutation.isPending}
                         >
+                            <CheckCircle className="w-4 h-4" />
                             Approve
                         </Button>
                     )}
 
                     {timetable.status === 'approved' && user?.role === 'admin' && (
                         <Button
+                            variant="glow"
                             onClick={() => publishMutation.mutate()}
                             loading={publishMutation.isPending}
                         >
+                            <Globe className="w-4 h-4" />
                             Publish
                         </Button>
                     )}
                 </div>
-            </div>
+            </motion.div>
 
-            {Object.entries(eventsByBatch).map(([batchId, { batch, events }]) => (
-                <Card key={batchId} title={`Batch: ${batch?.code || batchId}`}>
-                    <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
-                            <thead>
-                                <tr>
-                                    <th className="border p-2 bg-gray-50 w-32">Time</th>
-                                    {DAYS.map((day) => (
-                                        <th key={day} className="border p-2 bg-gray-50">
-                                            {getDayName(day)}
+            {/* Timetable Grids */}
+            {Object.entries(eventsByBatch).map(([batchId, { batch, events }], batchIndex) => (
+                <motion.div
+                    key={batchId}
+                    variants={itemVariants}
+                    custom={batchIndex}
+                >
+                    <Card title={`Batch: ${batch?.code || batchId}`} className="overflow-hidden">
+                        <div className="overflow-x-auto custom-scrollbar -mx-6 -mb-6">
+                            <table className="w-full border-collapse min-w-[800px]">
+                                <thead>
+                                    <tr>
+                                        <th className="border border-border-glass p-3 bg-surface-80/50 w-32 text-text-muted text-sm font-medium">
+                                            Time
                                         </th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {timeSlots.filter(s => !s.isBreak).map((slotInfo) => {
-                                    const slotNum = slotInfo.slot || slotInfo.slotNumber;
-                                    return (
-                                        <tr key={slotNum}>
-                                            <td className="border p-2 bg-gray-50 text-center text-xs font-medium">
-                                                <div className="font-semibold">Slot {slotNum}</div>
-                                                <div className="text-gray-500">{slotInfo.startTime} - {slotInfo.endTime}</div>
-                                            </td>
-                                            {DAYS.map((day) => {
-                                                const event = getEventForSlot(events, day, slotNum);
-                                                return (
-                                                    <td key={day} className="border p-1 h-20">
-                                                        {event && (
-                                                            <div className={`p-2 rounded-lg h-full ${event.subject?.isLab ? 'bg-purple-100' : 'bg-blue-100'}`}>
-                                                                <p className="font-medium text-sm">
-                                                                    {event.subject?.code || event.subject}
-                                                                </p>
-                                                                <p className="text-xs text-gray-600 mt-1">
-                                                                    {event.faculty?.name || 'TBA'}
-                                                                </p>
-                                                                <p className="text-xs text-gray-500">
-                                                                    {event.room?.code || 'TBA'}
-                                                                </p>
-                                                            </div>
-                                                        )}
-                                                    </td>
-                                                );
-                                            })}
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                </Card>
+                                        {DAYS.map((day) => (
+                                            <th key={day} className="border border-border-glass p-3 bg-surface-80/50 text-text-muted text-sm font-medium">
+                                                {getDayName(day)}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {timeSlots.filter(s => !s.isBreak).map((slotInfo) => {
+                                        const slotNum = slotInfo.slot || slotInfo.slotNumber;
+                                        return (
+                                            <tr key={slotNum}>
+                                                <td className="border border-border-glass p-2 bg-surface-80/30 text-center">
+                                                    <div className="text-sm font-medium text-text-primary">Slot {slotNum}</div>
+                                                    <div className="text-xs text-text-muted">{slotInfo.startTime} - {slotInfo.endTime}</div>
+                                                </td>
+                                                {DAYS.map((day) => {
+                                                    const event = getEventForSlot(events, day, slotNum);
+                                                    return (
+                                                        <td key={day} className="border border-border-glass p-1 h-20">
+                                                            {event && (
+                                                                <motion.div
+                                                                    initial={{ opacity: 0, scale: 0.9 }}
+                                                                    animate={{ opacity: 1, scale: 1 }}
+                                                                    whileHover={{ scale: 1.02 }}
+                                                                    transition={{ duration: 0.2 }}
+                                                                    className={cn(
+                                                                        'p-2 rounded-lg h-full cursor-pointer transition-all',
+                                                                        event.subject?.isLab
+                                                                            ? 'timetable-cell-lab'
+                                                                            : 'timetable-cell-theory'
+                                                                    )}
+                                                                >
+                                                                    <p className="font-medium text-sm text-text-primary">
+                                                                        {event.subject?.code || event.subject}
+                                                                    </p>
+                                                                    <p className="text-xs text-text-muted mt-1">
+                                                                        {event.faculty?.name || 'TBA'}
+                                                                    </p>
+                                                                    <p className="text-xs text-text-muted">
+                                                                        {event.room?.code || 'TBA'}
+                                                                    </p>
+                                                                </motion.div>
+                                                            )}
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </Card>
+                </motion.div>
             ))}
-        </div>
+
+            {/* Legend */}
+            <motion.div variants={itemVariants} className="flex items-center gap-6 px-4">
+                <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded timetable-cell-theory" />
+                    <span className="text-sm text-text-muted">Theory</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded timetable-cell-lab" />
+                    <span className="text-sm text-text-muted">Lab</span>
+                </div>
+            </motion.div>
+        </motion.div>
     );
 }

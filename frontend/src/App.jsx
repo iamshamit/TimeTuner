@@ -30,26 +30,28 @@ const queryClient = new QueryClient({
 
 export default function App() {
     return (
-        <QueryClientProvider client={queryClient}>
-            <BrowserRouter>
-                <Routes>
-                    <Route path="/login" element={<Login />} />
+        <div className="dark">
+            <QueryClientProvider client={queryClient}>
+                <BrowserRouter>
+                    <Routes>
+                        <Route path="/login" element={<Login />} />
 
-                    <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/departments" element={<DepartmentsPage />} />
-                        <Route path="/faculties" element={<FacultiesPage />} />
-                        <Route path="/rooms" element={<RoomsPage />} />
-                        <Route path="/subjects" element={<SubjectsPage />} />
-                        <Route path="/batches" element={<BatchesPage />} />
-                        <Route path="/timetables" element={<TimetableList />} />
-                        <Route path="/timetables/:id" element={<TimetableView />} />
-                        <Route path="/solver" element={<SolverPage />} />
-                        <Route path="/time-slots" element={<TimeSlotsPage />} />
-                    </Route>
-                </Routes>
-            </BrowserRouter>
-        </QueryClientProvider>
+                        <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+                            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                            <Route path="/dashboard" element={<Dashboard />} />
+                            <Route path="/departments" element={<DepartmentsPage />} />
+                            <Route path="/faculties" element={<FacultiesPage />} />
+                            <Route path="/rooms" element={<RoomsPage />} />
+                            <Route path="/subjects" element={<SubjectsPage />} />
+                            <Route path="/batches" element={<BatchesPage />} />
+                            <Route path="/timetables" element={<TimetableList />} />
+                            <Route path="/timetables/:id" element={<TimetableView />} />
+                            <Route path="/solver" element={<SolverPage />} />
+                            <Route path="/time-slots" element={<TimeSlotsPage />} />
+                        </Route>
+                    </Routes>
+                </BrowserRouter>
+            </QueryClientProvider>
+        </div>
     );
 }

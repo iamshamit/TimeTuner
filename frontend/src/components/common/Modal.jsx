@@ -1,5 +1,32 @@
 import { useEffect } from 'react';
-import { cn } from '../../lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const backdropVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1 },
+};
+
+const modalVariants = {
+    hidden: { opacity: 0, scale: 0.95, y: 20 },
+    visible: {
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        transition: {
+            type: 'spring',
+            damping: 25,
+            stiffness: 300,
+        },
+    },
+    exit: {
+        opacity: 0,
+        scale: 0.95,
+        y: 20,
+        transition: { duration: 0.2 },
+    },
+};
 
 export default function Modal({ isOpen, onClose, title, children, size = 'md' }) {
     useEffect(() => {
@@ -16,8 +43,6 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
         };
     }, [isOpen, onClose]);
 
-    if (!isOpen) return null;
-
     const sizeClasses = {
         sm: 'max-w-md',
         md: 'max-w-lg',
@@ -26,25 +51,44 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
     };
 
     return (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4">
-                <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={onClose} />
-                <div className={cn(
-                    'relative bg-white rounded-xl shadow-2xl w-full transform transition-all',
-                    sizeClasses[size]
-                )}>
-                    <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-                        <button
+        <AnimatePresence>
+            {isOpen && (
+                <div className="fixed inset-0 z-50 overflow-y-auto">
+                    <div className="flex min-h-full items-center justify-center p-4">
+                        <motion.div
+                            variants={backdropVariants}
+                            initial="hidden"
+                            animate="visible"
+                            exit="hidden"
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
                             onClick={onClose}
-                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                        />
+                        <motion.div
+                            variants={modalVariants}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                            className={cn(
+                                'relative glass-card w-full shadow-glow-lg',
+                                sizeClasses[size]
+                            )}
                         >
-                            <span className="text-2xl">×</span>
-                        </button>
+                            <div className="flex items-center justify-between p-4 border-b border-border-glass">
+                                <h3 className="text-lg font-semibold text-text-primary">{title}</h3>
+                                <motion.button
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={onClose}
+                                    className="p-1 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-50 transition-colors"
+                                >
+                                    <X className="w-5 h-5" />
+                                </motion.button>
+                            </div>
+                            <div className="p-4">{children}</div>
+                        </motion.div>
                     </div>
-                    <div className="p-4">{children}</div>
                 </div>
-            </div>
-        </div>
+            )}
+        </AnimatePresence>
     );
 }

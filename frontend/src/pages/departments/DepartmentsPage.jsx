@@ -1,11 +1,24 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { departmentsAPI } from '../../services/api';
-import Table from '../../components/common/Table';
-import Button from '../../components/common/Button';
-import Modal from '../../components/common/Modal';
-import Input from '../../components/common/Input';
-import ConfirmDialog from '../../components/common/ConfirmDialog';
+import { motion } from 'framer-motion';
+import { Plus, Building2 } from 'lucide-react';
+import { departmentsAPI } from '@/services/api';
+import Table from '@/components/common/Table';
+import Button from '@/components/common/Button';
+import Modal from '@/components/common/Modal';
+import Input from '@/components/common/Input';
+import ConfirmDialog from '@/components/common/ConfirmDialog';
+import { cn } from '@/lib/utils';
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+};
 
 export default function DepartmentsPage() {
     const [modalOpen, setModalOpen] = useState(false);
@@ -86,7 +99,12 @@ export default function DepartmentsPage() {
             key: 'isActive',
             label: 'Status',
             render: (val) => (
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${val !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                <span className={cn(
+                    'px-2.5 py-1 rounded-full text-xs font-medium border',
+                    val !== false
+                        ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                        : 'bg-red-500/20 text-red-400 border-red-500/30'
+                )}>
                     {val !== false ? 'Active' : 'Inactive'}
                 </span>
             )
@@ -96,38 +114,69 @@ export default function DepartmentsPage() {
             label: 'Actions',
             render: (_, row) => (
                 <div className="flex gap-2">
-                    <button onClick={(e) => { e.stopPropagation(); openEdit(row); }} className="text-blue-600 hover:text-blue-800">Edit</button>
-                    <button onClick={(e) => { e.stopPropagation(); setEditing(row); setDeleteOpen(true); }} className="text-red-600 hover:text-red-800">Delete</button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); openEdit(row); }}
+                        className="text-primary-400 hover:text-primary-300 transition-colors"
+                    >
+                        Edit
+                    </button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setEditing(row); setDeleteOpen(true); }}
+                        className="text-red-400 hover:text-red-300 transition-colors"
+                    >
+                        Delete
+                    </button>
                 </div>
             )
         }
     ];
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-gray-900">Departments</h1>
-                <Button onClick={openCreate}>+ Add Department</Button>
-            </div>
-
-            {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                    {error}
-                    <button onClick={() => setError('')} className="float-right font-bold">×</button>
+        <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-6"
+        >
+            <motion.div variants={itemVariants} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary-500/20 border border-primary-500/30">
+                        <Building2 className="w-5 h-5 text-primary-400" />
+                    </div>
+                    <h1 className="text-2xl font-bold text-text-primary">Departments</h1>
                 </div>
+                <Button onClick={openCreate}>
+                    <Plus className="w-4 h-4" />
+                    Add Department
+                </Button>
+            </motion.div>
+
+            {error && !modalOpen && (
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg flex items-center justify-between"
+                >
+                    {error}
+                    <button onClick={() => setError('')} className="text-red-400 hover:text-red-300 font-bold">
+                        ×
+                    </button>
+                </motion.div>
             )}
 
-            <Table
-                columns={columns}
-                data={data?.data?.data || []}
-                loading={isLoading}
-                emptyMessage="No departments found"
-            />
+            <motion.div variants={itemVariants}>
+                <Table
+                    columns={columns}
+                    data={data?.data?.data || []}
+                    loading={isLoading}
+                    emptyMessage="No departments found"
+                />
+            </motion.div>
 
             <Modal isOpen={modalOpen} onClose={closeModal} title={editing ? 'Edit Department' : 'Add Department'}>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm">
+                        <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-2 rounded-lg text-sm">
                             {error}
                         </div>
                     )}
@@ -162,6 +211,6 @@ export default function DepartmentsPage() {
                 message={`Are you sure you want to delete "${editing?.name}"? This action cannot be undone.`}
                 loading={deleteMutation.isPending}
             />
-        </div>
+        </motion.div>
     );
 }
